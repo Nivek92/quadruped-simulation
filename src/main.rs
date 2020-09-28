@@ -4,38 +4,28 @@ use kiss3d::window::Window;
 use nalgebra::base::{Matrix4, Vector4};
 use nalgebra::geometry::Point3;
 
+use quadruped_simulation::bezier::{generate_bezier_segments_lf, sample_bezier};
 use quadruped_simulation::geometry::{body_ik, leg_fk, leg_ik, RobotConfiguration};
 
-fn main() {
-  let mut window = Window::new("Simulation");
-  window.set_light(Light::StickToCamera);
-  window.set_point_size(10.0);
-
-  let robot_configuration = RobotConfiguration::new(207.5, 78.0, 60.5, 10., 107., 118.5);
-
-  let lp = vec![
-    Vector4::new(80., -200., 100., 1.),
-    Vector4::new(80., -200., -100., 1.),
-    Vector4::new(-120., -200., 100., 1.),
-    Vector4::new(-120., -200., -100., 1.),
-  ];
-
-  let body_orientation = [0., 0., 0.];
-  let body_position = [0., 0., 0.];
-
+fn step(
+  body_orientation: [f32; 3],
+  body_position: [f32; 3],
+  targets: [Vector4<f32>; 4],
+  robot_configuration: &RobotConfiguration,
+) -> [Vec<Vector4<f32>>; 5] {
   let fp = Vector4::new(0., 0., 0., 1.);
-
-  let [tlf, trf, tlb, trb, _tm] = body_ik(body_orientation, body_position, &robot_configuration);
-
-  let cp: Vec<Vector4<f32>> = vec![tlf, trf, tlb, trb].iter().map(|x| x * fp).collect();
 
   let ix = Matrix4::new(
     -1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.,
   );
 
+  let [tlf, trf, tlb, trb, _tm] = body_ik(body_orientation, body_position, robot_configuration);
+
+  let cp: Vec<Vector4<f32>> = vec![tlf, trf, tlb, trb].iter().map(|x| x * fp).collect();
+
   // lf
-  let q = tlf.try_inverse().unwrap() * lp[0];
-  let ik = leg_ik(q, &robot_configuration);
+  let q = tlf.try_inverse().unwrap() * targets[0];
+  let ik = leg_ik(q, robot_configuration);
   let ik_real = vec![
     std::f32::consts::FRAC_PI_2 - ik[0],
     std::f32::consts::FRAC_PI_3 - ik[1],
@@ -56,7 +46,7 @@ fn main() {
     .collect();
 
   // rf
-  let q = ix * trf.try_inverse().unwrap() * lp[1];
+  let q = ix * trf.try_inverse().unwrap() * targets[1];
   let ik = leg_ik(q, &robot_configuration);
   let ik_real = vec![
     std::f32::consts::FRAC_PI_2 + ik[0],
@@ -78,7 +68,7 @@ fn main() {
     .collect();
 
   // lb
-  let q = tlb.try_inverse().unwrap() * lp[2];
+  let q = tlb.try_inverse().unwrap() * targets[2];
   let ik = leg_ik(q, &robot_configuration);
   let ik_real = vec![
     std::f32::consts::FRAC_PI_2 + ik[0],
@@ -100,7 +90,7 @@ fn main() {
     .collect();
 
   // rb
-  let q = ix * trb.try_inverse().unwrap() * lp[3];
+  let q = ix * trb.try_inverse().unwrap() * targets[3];
   let ik = leg_ik(q, &robot_configuration);
   let ik_real = vec![
     std::f32::consts::FRAC_PI_2 - ik[0],
@@ -121,15 +111,50 @@ fn main() {
     .map(|x| trb * ix * x)
     .collect();
 
+  [cp, p_lf, p_rf, p_lb, p_rb]
+}
+
+fn main() {
+  let mut window = Window::new("Simulation");
+  window.set_light(Light::StickToCamera);
+  window.set_point_size(3.0);
+
+  let robot_configuration = RobotConfiguration::new(207.5, 78.0, 60.5, 10., 107., 118.5);
+
+  let body_orientation = [0., 0., 0.];
+  let body_position = [0., 0., 0.];
+
   let red = Point3::new(1.0, 0.0, 0.0);
   let green = Point3::new(0.0, 1.0, 0.0);
   let blue = Point3::new(0.0, 0.0, 1.0);
 
+  let frequency = 60.; // in Hz
+  let duration = 1.25; // in seconds
+
+  let segments_lf = generate_bezier_segments_lf();
+  let samples_lf = sample_bezier((frequency * 10. * duration) as u16, &segments_lf);
+
+  let mut j = 0;
+
   while window.render() {
+    let targets = [
+      samples_lf[j],
+      Vector4::new(80., -200., -100., 1.),
+      Vector4::new(-120., -200., 100., 1.),
+      Vector4::new(-120., -200., -100., 1.),
+    ];
+
     // draw target points
 
-    for i in 0..lp.len() {
-      let x = lp[i];
+    let [cp, p_lf, p_rf, p_lb, p_rb] = step(
+      body_orientation,
+      body_position,
+      targets,
+      &robot_configuration,
+    );
+
+    for i in 0..targets.len() {
+      let x = targets[i];
       window.draw_point(&Point3::new(x[0], x[2], x[1]), &red);
     }
 
@@ -199,5 +224,20 @@ fn main() {
       window.draw_point(&p1, &green);
       window.draw_line(&p1, &p2, &green);
     }
+
+    // draw trajectory lf
+
+    for i in 0..samples_lf.len() - 1 {
+      let p1 = Point3::new(samples_lf[i][0], samples_lf[i][2], samples_lf[i][1]);
+      let p2 = Point3::new(
+        samples_lf[i + 1][0],
+        samples_lf[i + 1][2],
+        samples_lf[i + 1][1],
+      );
+      window.draw_point(&p1, &red);
+      window.draw_line(&p1, &p2, &red);
+    }
+
+    j = (j + 1) % (samples_lf.len() - 1);
   }
 }
