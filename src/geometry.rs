@@ -1,12 +1,12 @@
 use nalgebra::base::{Matrix4, RowVector4, Vector4};
 
 pub struct RobotConfiguration {
-  l: f32,
-  w: f32,
-  l1: f32,
-  l2: f32,
-  l3: f32,
-  l4: f32,
+  pub l: f32,
+  pub w: f32,
+  pub l1: f32,
+  pub l2: f32,
+  pub l3: f32,
+  pub l4: f32,
 }
 
 impl RobotConfiguration {

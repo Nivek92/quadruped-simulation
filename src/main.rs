@@ -4,7 +4,7 @@ use kiss3d::window::Window;
 use nalgebra::base::{Matrix4, Vector4};
 use nalgebra::geometry::Point3;
 
-use quadruped_simulation::bezier::{generate_bezier_segments_lf, sample_bezier};
+use quadruped_simulation::bezier::{generate_bezier_segments, sample_bezier};
 use quadruped_simulation::geometry::{body_ik, leg_fk, leg_ik, RobotConfiguration};
 
 fn step(
@@ -131,18 +131,29 @@ fn main() {
   let frequency = 60.; // in Hz
   let duration = 1.25; // in seconds
 
-  let segments_lf = generate_bezier_segments_lf();
-  let samples_lf = sample_bezier((frequency * 10. * duration) as u16, &segments_lf);
+  let segments = generate_bezier_segments();
+
+  let samples_lf: Vec<Vector4<f32>> = sample_bezier((frequency * 10. * duration) as u16, &segments)
+    .iter()
+    .map(|x| *x + Vector4::new(robot_configuration.l / 2., 0., 100., 0.))
+    .collect();
+  let samples_rf: Vec<Vector4<f32>> = sample_bezier((frequency * 10. * duration) as u16, &segments)
+    .iter()
+    .map(|x| *x + Vector4::new(robot_configuration.l / 2., 0., -100., 0.))
+    .collect();
+  let samples_lb: Vec<Vector4<f32>> = sample_bezier((frequency * 10. * duration) as u16, &segments)
+    .iter()
+    .map(|x| *x + Vector4::new(-robot_configuration.l / 2., 0., 100., 0.))
+    .collect();
+  let samples_rb: Vec<Vector4<f32>> = sample_bezier((frequency * 10. * duration) as u16, &segments)
+    .iter()
+    .map(|x| *x + Vector4::new(-robot_configuration.l / 2., 0., -100., 0.))
+    .collect();
 
   let mut j = 0;
 
   while window.render() {
-    let targets = [
-      samples_lf[j],
-      Vector4::new(80., -200., -100., 1.),
-      Vector4::new(-120., -200., 100., 1.),
-      Vector4::new(-120., -200., -100., 1.),
-    ];
+    let targets = [samples_lf[j], samples_rf[j], samples_lb[j], samples_rb[j]];
 
     // draw target points
 
@@ -233,6 +244,45 @@ fn main() {
         samples_lf[i + 1][0],
         samples_lf[i + 1][2],
         samples_lf[i + 1][1],
+      );
+      window.draw_point(&p1, &red);
+      window.draw_line(&p1, &p2, &red);
+    }
+
+    // draw trajectory rf
+
+    for i in 0..samples_rf.len() - 1 {
+      let p1 = Point3::new(samples_rf[i][0], samples_rf[i][2], samples_rf[i][1]);
+      let p2 = Point3::new(
+        samples_rf[i + 1][0],
+        samples_rf[i + 1][2],
+        samples_rf[i + 1][1],
+      );
+      window.draw_point(&p1, &red);
+      window.draw_line(&p1, &p2, &red);
+    }
+
+    // draw trajectory lb
+
+    for i in 0..samples_lb.len() - 1 {
+      let p1 = Point3::new(samples_lb[i][0], samples_lb[i][2], samples_lb[i][1]);
+      let p2 = Point3::new(
+        samples_lb[i + 1][0],
+        samples_lb[i + 1][2],
+        samples_lb[i + 1][1],
+      );
+      window.draw_point(&p1, &red);
+      window.draw_line(&p1, &p2, &red);
+    }
+
+    // draw trajectory rb
+
+    for i in 0..samples_rb.len() - 1 {
+      let p1 = Point3::new(samples_rb[i][0], samples_rb[i][2], samples_rb[i][1]);
+      let p2 = Point3::new(
+        samples_rb[i + 1][0],
+        samples_rb[i + 1][2],
+        samples_rb[i + 1][1],
       );
       window.draw_point(&p1, &red);
       window.draw_line(&p1, &p2, &red);

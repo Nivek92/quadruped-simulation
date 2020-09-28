@@ -64,18 +64,19 @@ pub fn sample_bezier(sample_size: u16, segments: &Vec<Vec<Vector3<f32>>>) -> Vec
   samples
 }
 
-pub fn generate_bezier_segments_lf() -> Vec<Vec<Vector3<f32>>> {
-  let p0 = Vector3::new(40., -200., 100.);
-  let p1 = Vector3::new(20., -200., 100.);
-  let p2 = Vector3::new(0., -160., 100.);
-  let p3 = Vector3::new(0., -160., 100.);
-  let p4 = Vector3::new(0., -160., 100.);
-  let p5 = Vector3::new(100., -160., 100.);
-  let p6 = Vector3::new(100., -160., 100.);
-  let p7 = Vector3::new(100., -140., 100.);
-  let p8 = Vector3::new(200., -140., 100.);
-  let p9 = Vector3::new(200., -140., 100.);
-  let p10 = Vector3::new(160., -200., 100.);
-  let p11 = Vector3::new(140., -200., 100.);
+pub fn generate_bezier_segments() -> Vec<Vec<Vector3<f32>>> {
+  let p0 = Vector3::new(-63.5, -200., 0.);
+  let p1 = Vector3::new(-83.75, -200., 0.);
+  let p2 = Vector3::new(-103.75, -160., 0.);
+  let p3 = Vector3::new(-103.75, -160., 0.);
+  let p4 = Vector3::new(-103.75, -160., 0.);
+  let p5 = Vector3::new(0., -160., 0.);
+  let p6 = Vector3::new(0., -160., 0.);
+  let p7 = Vector3::new(0., -140., 0.);
+  let p8 = Vector3::new(103.75, -140., 0.);
+  let p9 = Vector3::new(103.75, -140., 0.);
+  let p10 = Vector3::new(83.75, -200., 0.);
+  let p11 = Vector3::new(63.5, -200., 0.);
+
   vec![vec![p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p0]]
 }
