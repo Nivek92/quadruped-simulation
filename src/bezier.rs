@@ -20,7 +20,7 @@ fn generate_binomial_coefficients(n: usize) -> Vec<u16> {
   }
 }
 
-fn bezier(t: f32, points: &Vec<Vector3<f32>>) -> Vector4<f32> {
+pub fn bezier(t: f32, points: &Vec<Vector3<f32>>) -> Vector4<f32> {
   let n = points.len();
 
   let t = f32::clamp(t, 0., 1.);
@@ -78,5 +78,76 @@ pub fn generate_bezier_segments() -> Vec<Vec<Vector3<f32>>> {
   let p10 = Vector3::new(83.75, -200., 0.);
   let p11 = Vector3::new(63.5, -200., 0.);
 
-  vec![vec![p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p0]]
+  vec![vec![p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11]]
+}
+
+pub fn swing_phase(
+  t: f32,
+  step_size: f32,
+  clearance_height: f32,
+  velocity: f32,
+  lateral_fraction: f32,
+) -> Vector4<f32> {
+  let step_size = step_size / 2.;
+  let c = f32::cos(lateral_fraction);
+  let s = f32::sin(lateral_fraction);
+
+  let h = [
+    -step_size, // Ctrl Point 0, half of stride len
+    -step_size * 1.4,
+    -step_size * 1.5,
+    -step_size * 1.5,
+    -step_size * 1.5,
+    0.,
+    0.,
+    0.,
+    step_size * 1.5,
+    step_size * 1.5,
+    step_size * 1.4,
+    step_size,
+  ];
+
+  let v = [
+    0.,
+    0.,
+    clearance_height * 0.9,
+    clearance_height * 0.9,
+    clearance_height * 0.9,
+    clearance_height * 0.9,
+    clearance_height * 0.9,
+    clearance_height * 1.1,
+    clearance_height * 1.1,
+    clearance_height * 1.1,
+    0.,
+    0.,
+  ];
+
+  let mut points: Vec<Vector3<f32>> = vec![];
+
+  for i in 0..12 {
+    points.push(Vector3::new(
+      c * velocity * h[i],
+      velocity * v[i],
+      s * velocity * h[i],
+    ));
+  }
+
+  bezier(t, &points)
+}
+
+pub fn stance_phase(
+  t: f32,
+  step_size: f32,
+  penetration_depth: f32,
+  velocity: f32,
+  lateral_fraction: f32,
+) -> Vector4<f32> {
+  let c = f32::cos(lateral_fraction);
+  let s = f32::sin(lateral_fraction);
+
+  let x = c * step_size * (1. - 2. * t) * velocity;
+  let z = s * step_size * (1. - 2. * t) * velocity;
+  let y = -penetration_depth * f32::cos(std::f32::consts::PI * (x + z) / 2. * step_size);
+
+  Vector4::new(x, y, z, 1.)
 }

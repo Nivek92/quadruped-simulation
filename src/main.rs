@@ -121,7 +121,7 @@ fn main() {
 
   let robot_configuration = RobotConfiguration::new(207.5, 78.0, 60.5, 10., 107., 118.5);
 
-  let body_orientation = [0., 0., 0.];
+  let body_orientation = [std::f32::consts::PI / 16., std::f32::consts::PI / 8., 0.];
   let body_position = [0., 0., 0.];
 
   let red = Point3::new(1.0, 0.0, 0.0);
