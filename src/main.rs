@@ -4,7 +4,7 @@ use kiss3d::window::Window;
 use nalgebra::base::{Matrix4, Vector4};
 use nalgebra::geometry::Point3;
 
-use quadruped_simulation::bezier::{generate_bezier_segments, sample_bezier};
+use quadruped_simulation::gait::trajectory;
 use quadruped_simulation::geometry::{body_ik, leg_fk, leg_ik, RobotConfiguration};
 
 fn step(
@@ -31,15 +31,15 @@ fn step(
     std::f32::consts::FRAC_PI_3 - ik[1],
     std::f32::consts::PI - ik[2],
   ];
-  println!(
-    "leg_ik lf: {}, {}, {} -> {}, {}, {}",
-    ik[0].to_degrees(),
-    ik[1].to_degrees(),
-    ik[2].to_degrees(),
-    ik_real[0].to_degrees(),
-    ik_real[1].to_degrees(),
-    ik_real[2].to_degrees()
-  );
+  // println!(
+  //   "leg_ik lf: {}, {}, {} -> {}, {}, {}",
+  //   ik[0].to_degrees(),
+  //   ik[1].to_degrees(),
+  //   ik[2].to_degrees(),
+  //   ik_real[0].to_degrees(),
+  //   ik_real[1].to_degrees(),
+  //   ik_real[2].to_degrees()
+  // );
   let p_lf: Vec<Vector4<f32>> = leg_fk(ik, &robot_configuration)
     .iter()
     .map(|x| tlf * x)
@@ -53,15 +53,15 @@ fn step(
     2. * std::f32::consts::FRAC_PI_3 + ik[1],
     ik[2],
   ];
-  println!(
-    "leg_ik rf: {}, {}, {} -> {}, {}, {}",
-    ik[0].to_degrees(),
-    ik[1].to_degrees(),
-    ik[2].to_degrees(),
-    ik_real[0].to_degrees(),
-    ik_real[1].to_degrees(),
-    ik_real[2].to_degrees()
-  );
+  // println!(
+  //   "leg_ik rf: {}, {}, {} -> {}, {}, {}",
+  //   ik[0].to_degrees(),
+  //   ik[1].to_degrees(),
+  //   ik[2].to_degrees(),
+  //   ik_real[0].to_degrees(),
+  //   ik_real[1].to_degrees(),
+  //   ik_real[2].to_degrees()
+  // );
   let p_rf: Vec<Vector4<f32>> = leg_fk(ik, &robot_configuration)
     .iter()
     .map(|x| trf * ix * x)
@@ -75,15 +75,15 @@ fn step(
     std::f32::consts::FRAC_PI_3 - ik[1],
     std::f32::consts::PI - ik[2],
   ];
-  println!(
-    "leg_ik lb: {}, {}, {} -> {}, {}, {}",
-    ik[0].to_degrees(),
-    ik[1].to_degrees(),
-    ik[2].to_degrees(),
-    ik_real[0].to_degrees(),
-    ik_real[1].to_degrees(),
-    ik_real[2].to_degrees()
-  );
+  // println!(
+  //   "leg_ik lb: {}, {}, {} -> {}, {}, {}",
+  //   ik[0].to_degrees(),
+  //   ik[1].to_degrees(),
+  //   ik[2].to_degrees(),
+  //   ik_real[0].to_degrees(),
+  //   ik_real[1].to_degrees(),
+  //   ik_real[2].to_degrees()
+  // );
   let p_lb: Vec<Vector4<f32>> = leg_fk(ik, &robot_configuration)
     .iter()
     .map(|x| tlb * x)
@@ -97,15 +97,15 @@ fn step(
     2. * std::f32::consts::FRAC_PI_3 + ik[1],
     ik[2],
   ];
-  println!(
-    "leg_ik rb: {}, {}, {} -> {}, {}, {}",
-    ik[0].to_degrees(),
-    ik[1].to_degrees(),
-    ik[2].to_degrees(),
-    ik_real[0].to_degrees(),
-    ik_real[1].to_degrees(),
-    ik_real[2].to_degrees()
-  );
+  // println!(
+  //   "leg_ik rb: {}, {}, {} -> {}, {}, {}",
+  //   ik[0].to_degrees(),
+  //   ik[1].to_degrees(),
+  //   ik[2].to_degrees(),
+  //   ik_real[0].to_degrees(),
+  //   ik_real[1].to_degrees(),
+  //   ik_real[2].to_degrees()
+  // );
   let p_rb: Vec<Vector4<f32>> = leg_fk(ik, &robot_configuration)
     .iter()
     .map(|x| trb * ix * x)
@@ -115,45 +115,63 @@ fn step(
 }
 
 fn main() {
+  let frequency = 60.;
+  let duration = 1.25;
+
   let mut window = Window::new("Simulation");
+  window.set_framerate_limit(Some(frequency as u64));
   window.set_light(Light::StickToCamera);
   window.set_point_size(3.0);
 
   let robot_configuration = RobotConfiguration::new(207.5, 78.0, 60.5, 10., 107., 118.5);
 
-  let body_orientation = [std::f32::consts::PI / 16., std::f32::consts::PI / 8., 0.];
+  // let body_orientation = [std::f32::consts::PI / 16., std::f32::consts::PI / 8., 0.];
+  let body_orientation = [0., 0., 0.];
   let body_position = [0., 0., 0.];
 
   let red = Point3::new(1.0, 0.0, 0.0);
   let green = Point3::new(0.0, 1.0, 0.0);
   let blue = Point3::new(0.0, 0.0, 1.0);
 
-  let frequency = 60.; // in Hz
-  let duration = 1.25; // in seconds
+  let offset_lf = 0.;
+  let offset_rf = 0.;
+  let offset_lb = 0.5;
+  let offset_rb = 0.5;
 
-  let segments = generate_bezier_segments();
-
-  let samples_lf: Vec<Vector4<f32>> = sample_bezier((frequency * 10. * duration) as u16, &segments)
-    .iter()
-    .map(|x| *x + Vector4::new(robot_configuration.l / 2., 0., 100., 0.))
-    .collect();
-  let samples_rf: Vec<Vector4<f32>> = sample_bezier((frequency * 10. * duration) as u16, &segments)
-    .iter()
-    .map(|x| *x + Vector4::new(robot_configuration.l / 2., 0., -100., 0.))
-    .collect();
-  let samples_lb: Vec<Vector4<f32>> = sample_bezier((frequency * 10. * duration) as u16, &segments)
-    .iter()
-    .map(|x| *x + Vector4::new(-robot_configuration.l / 2., 0., 100., 0.))
-    .collect();
-  let samples_rb: Vec<Vector4<f32>> = sample_bezier((frequency * 10. * duration) as u16, &segments)
-    .iter()
-    .map(|x| *x + Vector4::new(-robot_configuration.l / 2., 0., -100., 0.))
-    .collect();
-
-  let mut j = 0;
+  let mut t_lf = offset_lf;
+  let mut t_rf = offset_rf;
+  let mut t_lb = offset_lb;
+  let mut t_rb = offset_rb;
 
   while window.render() {
-    let targets = [samples_lf[j], samples_rf[j], samples_lb[j], samples_rb[j]];
+    let target_lf = trajectory(t_lf, 65., 1., 0., 50., 10., 0.5)
+      + Vector4::new(robot_configuration.l / 2., -200., 100., 0.);
+    let target_rf = trajectory(t_rf, 65., 1., 0., 50., 10., 0.5)
+      + Vector4::new(robot_configuration.l / 2., -200., -100., 0.);
+    let target_lb = trajectory(t_lb, 65., 1., 0., 50., 10., 0.5)
+      + Vector4::new(-robot_configuration.l / 2., -200., 100., 0.);
+    let target_rb = trajectory(t_rb, 65., 1., 0., 50., 10., 0.5)
+      + Vector4::new(-robot_configuration.l / 2., -200., -100., 0.);
+
+    t_lf += 1. / frequency / duration;
+    t_rf += 1. / frequency / duration;
+    t_lb += 1. / frequency / duration;
+    t_rb += 1. / frequency / duration;
+
+    if t_lf > 1. {
+      t_lf = 0.;
+    }
+    if t_rf > 1. {
+      t_rf = 0.;
+    }
+    if t_lb > 1. {
+      t_lb = 0.;
+    }
+    if t_rb > 1. {
+      t_rb = 0.;
+    }
+
+    let targets = [target_lf, target_rf, target_lb, target_rb];
 
     // draw target points
 
@@ -235,59 +253,5 @@ fn main() {
       window.draw_point(&p1, &green);
       window.draw_line(&p1, &p2, &green);
     }
-
-    // draw trajectory lf
-
-    for i in 0..samples_lf.len() - 1 {
-      let p1 = Point3::new(samples_lf[i][0], samples_lf[i][2], samples_lf[i][1]);
-      let p2 = Point3::new(
-        samples_lf[i + 1][0],
-        samples_lf[i + 1][2],
-        samples_lf[i + 1][1],
-      );
-      window.draw_point(&p1, &red);
-      window.draw_line(&p1, &p2, &red);
-    }
-
-    // draw trajectory rf
-
-    for i in 0..samples_rf.len() - 1 {
-      let p1 = Point3::new(samples_rf[i][0], samples_rf[i][2], samples_rf[i][1]);
-      let p2 = Point3::new(
-        samples_rf[i + 1][0],
-        samples_rf[i + 1][2],
-        samples_rf[i + 1][1],
-      );
-      window.draw_point(&p1, &red);
-      window.draw_line(&p1, &p2, &red);
-    }
-
-    // draw trajectory lb
-
-    for i in 0..samples_lb.len() - 1 {
-      let p1 = Point3::new(samples_lb[i][0], samples_lb[i][2], samples_lb[i][1]);
-      let p2 = Point3::new(
-        samples_lb[i + 1][0],
-        samples_lb[i + 1][2],
-        samples_lb[i + 1][1],
-      );
-      window.draw_point(&p1, &red);
-      window.draw_line(&p1, &p2, &red);
-    }
-
-    // draw trajectory rb
-
-    for i in 0..samples_rb.len() - 1 {
-      let p1 = Point3::new(samples_rb[i][0], samples_rb[i][2], samples_rb[i][1]);
-      let p2 = Point3::new(
-        samples_rb[i + 1][0],
-        samples_rb[i + 1][2],
-        samples_rb[i + 1][1],
-      );
-      window.draw_point(&p1, &red);
-      window.draw_line(&p1, &p2, &red);
-    }
-
-    j = (j + 1) % (samples_lf.len() - 1);
   }
 }

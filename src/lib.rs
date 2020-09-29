@@ -1,4 +1,4 @@
 #![feature(clamp)]
 
-pub mod bezier;
+pub mod gait;
 pub mod geometry;
