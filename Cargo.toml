@@ -4,6 +4,15 @@ version = "0.1.0"
 authors = ["NiVeK92 <Ztear@web.de>"]
 edition = "2018"
 
+[lib]
+name = "lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
+
+
 [dependencies]
 nalgebra = "0.22"
 kiss3d = "0.25.0"

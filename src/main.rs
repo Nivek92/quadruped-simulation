@@ -3,7 +3,7 @@ use kiss3d::window::Window;
 
 use nalgebra::geometry::Point3;
 
-use quadruped_simulation::Quadruped;
+use lib::Quadruped;
 
 fn main() {
   let mut window = Window::new("Simulation");
@@ -19,7 +19,7 @@ fn main() {
   let blue = Point3::new(0., 0., 1.);
 
   while window.render() {
-    let [body, leg_lf, leg_rf, leg_lb, leg_rb] = quadruped.update();
+    let [body, leg_lf, leg_rf, leg_lb, leg_rb] = quadruped.get_coordinates();
 
     // draw frame
 

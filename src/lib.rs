@@ -433,16 +433,18 @@ impl Quadruped {
     self.body_position = position;
   }
 
-  pub fn update(&mut self) -> [Vec<Vector4<f32>>; 5] {
+  pub fn update(&mut self) {
+    self.update_legs();
+    self.update_timer();
+  }
+
+  pub fn get_coordinates(&mut self) -> [Vec<Vector4<f32>>; 5] {
     let fp = Vector4::new(0., 0., 0., 1.);
 
     // invert x
     let inv_x = Matrix4::new(
       -1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.,
     );
-
-    self.update_legs();
-    self.update_timer();
 
     let [tlf, trf, tlb, trb] = self.shoulder_transformations();
 
@@ -481,5 +483,9 @@ impl Quadruped {
 
   pub fn trot(&mut self) {
     self.change_gait(Gait::Trot);
+  }
+
+  pub fn get_thetas(&self) -> [[f32; 3]; 4] {
+    self.thetas
   }
 }
