@@ -223,7 +223,7 @@ impl Gait {
   fn offsets(&self) -> [f32; 4] {
     match self {
       Gait::Idle => [0., 0., 0., 0.],
-      Gait::Walk => [0., 0.5, 0., 0.5],
+      Gait::Walk => [0., 0.5, 0.25, 0.75],
       Gait::Trot => [0., 0., 0.5, 0.5],
     }
   }
@@ -476,10 +476,10 @@ impl Quadruped {
   }
 
   pub fn walk(&mut self) {
-    self.gait = Gait::Walk;
+    self.change_gait(Gait::Walk);
   }
 
   pub fn trot(&mut self) {
-    self.gait = Gait::Trot;
+    self.change_gait(Gait::Trot);
   }
 }
