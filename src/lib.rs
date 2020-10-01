@@ -402,7 +402,18 @@ impl Quadruped {
     match self.gait {
       Gait::Idle => (),
       _ => {
-        let targets = self.get_targets();
+        // invert x
+        let inv_x = Matrix4::new(
+          -1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.,
+        );
+        let mut targets = self.get_targets();
+        let [tlf, trf, tlb, trb] = self.shoulder_transformations();
+
+        targets[0] = tlf.try_inverse().unwrap() * targets[0];
+        targets[1] = inv_x * trf.try_inverse().unwrap() * targets[1];
+        targets[2] = tlb.try_inverse().unwrap() * targets[2];
+        targets[3] = inv_x * trb.try_inverse().unwrap() * targets[3];
+
         let angles = self.legs_ik(targets);
 
         self.thetas = angles;
