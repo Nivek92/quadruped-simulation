@@ -1,5 +1,17 @@
-#![feature(clamp)]
 use nalgebra::base::{Matrix4, RowVector4, Vector3, Vector4};
+
+fn clamp(x: f32, min: f32, max: f32) -> f32 {
+  let mut t = x;
+  if t < min {
+    t = min;
+  }
+
+  if t > max {
+    t = max;
+  }
+
+  t
+}
 
 fn generate_binomial_coefficients(n: usize) -> Vec<u16> {
   if n == 0 {
@@ -24,7 +36,7 @@ fn generate_binomial_coefficients(n: usize) -> Vec<u16> {
 pub fn bezier(t: f32, points: &Vec<Vector3<f32>>) -> Vector4<f32> {
   let n = points.len();
 
-  let t = f32::clamp(t, 0., 1.);
+  let t = clamp(t, 0., 1.);
   let nt = 1. - t;
 
   let coefficients = generate_binomial_coefficients(n - 1);
@@ -129,7 +141,7 @@ pub fn trajectory(
   penetration_depth: f32,
   swing_duration: f32,
 ) -> Vector4<f32> {
-  let t = f32::clamp(t, 0., 1.);
+  let t = clamp(t, 0., 1.);
 
   if t > swing_duration {
     return stance_phase(
